@@ -98,7 +98,7 @@ def main():
     validlist = os.path.join(datadir, 'sets/val_mos_list.txt')
 
     ssl_model_type = cp_path.split('/')[-1]
-    if ssl_model_type == 'wav2vec_small.pt':
+    if ssl_model_type in ['wav2vec_small.pt', 'data2vec2_base_libri_960h.pt']:
         SSL_OUT_DIM = 768
     elif ssl_model_type in ['w2v_large_lv_fsh_swbd_cv.pt', 'xlsr_53_56k.pt']:
         SSL_OUT_DIM = 1024
