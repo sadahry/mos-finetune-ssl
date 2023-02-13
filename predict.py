@@ -4,6 +4,11 @@
 # All rights reserved.
 # ==============================================================================
 
+# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+import sys
+sys.path.append("/workspaces/voicemos-challange-2022/src/fairseq")
+from examples.data2vec.models.data2vec2 import Data2VecMultiModel
+
 import os
 import argparse
 import torch
@@ -42,7 +47,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     ssl_model_type = cp_path.split('/')[-1]
-    if ssl_model_type == 'wav2vec_small.pt':
+    if ssl_model_type in ['wav2vec_small.pt', 'data2vec2_base_libri.pt']:
         SSL_OUT_DIM = 768
     elif ssl_model_type in ['w2v_large_lv_fsh_swbd_cv.pt', 'xlsr_53_56k.pt']:
         SSL_OUT_DIM = 1024
