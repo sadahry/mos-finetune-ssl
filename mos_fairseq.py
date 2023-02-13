@@ -4,6 +4,11 @@
 # All rights reserved.
 # ==============================================================================
 
+# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+import sys
+sys.path.append("/workspaces/voicemos-challange-2022/src/fairseq")
+from examples.data2vec.models.data2vec2 import Data2VecMultiModel
+
 import os
 import argparse
 import fairseq
