@@ -18,8 +18,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
+import numpy as np
 import random
-random.seed(1984)
+
 
 class MosPredictor(nn.Module):
     def __init__(self, ssl_model, ssl_out_dim):
@@ -85,7 +86,22 @@ def main():
     parser.add_argument('--fairseq_base_model', type=str, required=True, help='Path to pretrained fairseq base model')
     parser.add_argument('--finetune_from_checkpoint', type=str, required=False, help='Path to your checkpoint to finetune from')
     parser.add_argument('--outdir', type=str, required=False, default='checkpoints', help='Output directory for your trained checkpoints')
+    parser.add_argument('--seed', type=int, required=False, default=0, help='seed')
     args = parser.parse_args()
+
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+
+    def seed_worker(worker_id):
+        worker_seed = torch.initial_seed() % 2**32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+
+    g = torch.Generator()
+    g.manual_seed(args.seed)
 
     cp_path = args.fairseq_base_model
     datadir = args.datadir
@@ -116,10 +132,10 @@ def main():
     ssl_model.remove_pretraining_modules()
     
     trainset = MyDataset(wavdir, trainlist)
-    trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2, collate_fn=trainset.collate_fn)
+    trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2, collate_fn=trainset.collate_fn, worker_init_fn=seed_worker, generator=g)
 
     validset = MyDataset(wavdir, validlist)
-    validloader = DataLoader(validset, batch_size=2, shuffle=True, num_workers=2, collate_fn=validset.collate_fn)
+    validloader = DataLoader(validset, batch_size=2, shuffle=True, num_workers=2, collate_fn=validset.collate_fn, worker_init_fn=seed_worker, generator=g)
 
     net = MosPredictor(ssl_model, SSL_OUT_DIM)
     net = net.to(device)
