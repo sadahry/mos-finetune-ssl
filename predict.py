@@ -4,13 +4,8 @@
 # All rights reserved.
 # ==============================================================================
 
-# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
-import sys
-
-sys.path.append("/workspaces/voicemos-challange-2022/src/fairseq")
-from examples.data2vec.models.data2vec2 import Data2VecMultiModel
-
 import os
+import sys
 import argparse
 import torch
 import torch.nn as nn
@@ -19,6 +14,19 @@ from torch.utils.data import DataLoader
 from mos_fairseq import MosPredictor, MyDataset
 import numpy as np
 import scipy.stats
+
+
+# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+sys.path.append(os.environ["D2V2_SPECTROGRAM_PYTHONPATH"])
+import examples.data2vec.models.data2vec2  # noqa: E402, F401
+import examples.data2vec.tasks.spectrogram_pretraining  # noqa: E402, F401
+
+# spectrogramの処理も必要
+sys.path.append(os.environ["TRANSFORM_TO_SPECTROGRAM_PYTHONPATH"])
+from transform_to_spectrogram import transform_to_spectrogram  # noqa: E402, F401
+
+SSL_OUT_DIM = int(os.environ["SSL_OUT_DIM"])
+INPUT_TYPE = os.environ["INPUT_TYPE"]
 
 
 def systemID(uttID):
@@ -64,15 +72,6 @@ def main():
 
     print("Loading checkpoint")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    ssl_model_type = cp_path.split("/")[-1]
-    if ssl_model_type in ["wav2vec_small.pt", "data2vec2_base_libri.pt"]:
-        SSL_OUT_DIM = 768
-    elif ssl_model_type in ["w2v_large_lv_fsh_swbd_cv.pt", "xlsr_53_56k.pt"]:
-        SSL_OUT_DIM = 1024
-    else:
-        print("*** ERROR *** SSL model type " + ssl_model_type + " not supported.")
-        exit()
 
     model = MosPredictor(ssl_model, SSL_OUT_DIM).to(device)
     model.eval()
