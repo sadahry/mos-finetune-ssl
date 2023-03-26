@@ -15,18 +15,35 @@ from mos_fairseq import MosPredictor, MyDataset
 import numpy as np
 import scipy.stats
 
+try:
+    # Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+    sys.path.append(os.environ["D2V2_SPECTROGRAM_PYTHONPATH"])
+    import examples.data2vec.models.data2vec2  # noqa: E402, F401
+    import examples.data2vec.tasks.spectrogram_pretraining  # noqa: E402, F401
+except (KeyError, ModuleNotFoundError) as e:
+    print(e)
+    print("Module data2vec2 is not used")
 
-# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
-sys.path.append(os.environ["D2V2_SPECTROGRAM_PYTHONPATH"])
-import examples.data2vec.models.data2vec2  # noqa: E402, F401
-import examples.data2vec.tasks.spectrogram_pretraining  # noqa: E402, F401
+try:
+    # Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+    sys.path.append(os.environ["MAE_AST_PYTHONPATH"])
+    import mae_ast.models.mae_ast  # noqa: E402, F401
+    import mae_ast.tasks.mae_ast_pretraining  # noqa: E402, F401
+except (KeyError, ModuleNotFoundError) as e:
+    print(e)
+    print("Module mae_ast is not used")
 
-# spectrogramの処理も必要
-sys.path.append(os.environ["TRANSFORM_TO_SPECTROGRAM_PYTHONPATH"])
-from transform_to_spectrogram import transform_to_spectrogram  # noqa: E402, F401
+try:
+    # spectrogramの処理も必要
+    sys.path.append(os.environ["TRANSFORM_TO_SPECTROGRAM_PYTHONPATH"])
+    from transform_to_spectrogram import transform_to_spectrogram  # noqa: E402, F401
+except (KeyError, ModuleNotFoundError) as e:
+    print(e)
+    print("transform_to_spectrogram")
+
 
 SSL_OUT_DIM = int(os.environ["SSL_OUT_DIM"])
-INPUT_TYPE = os.environ["INPUT_TYPE"]
+INPUT_TYPE = os.getenv("INPUT_TYPE", "wav")
 
 
 def systemID(uttID):
