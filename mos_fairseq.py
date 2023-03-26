@@ -23,8 +23,12 @@ sys.path.append(os.environ["D2V2_SPECTROGRAM_PYTHONPATH"])
 import examples.data2vec.models.data2vec2  # noqa: E402, F401
 import examples.data2vec.tasks.spectrogram_pretraining  # noqa: E402, F401
 
+# spectrogramの処理も必要
+sys.path.append(os.environ["TRANSFORM_TO_SPECTROGRAM_PYTHONPATH"])
+from transform_to_spectrogram import transform_to_spectrogram  # noqa: E402, F401
 
 SSL_OUT_DIM = int(os.environ["SSL_OUT_DIM"])
+INPUT_TYPE = os.environ["INPUT_TYPE"]
 
 
 class MosPredictor(nn.Module):
@@ -74,6 +78,8 @@ class MyDataset(Dataset):
         for wav in wavs:
             amount_to_pad = max_len - wav.shape[1]
             padded_wav = torch.nn.functional.pad(wav, (0, amount_to_pad), "constant", 0)
+            if INPUT_TYPE != "wav":
+                padded_wav = transform_to_spectrogram(padded_wav, INPUT_TYPE)
             output_wavs.append(padded_wav)
 
         output_wavs = torch.stack(output_wavs, dim=0)
