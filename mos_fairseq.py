@@ -5,9 +5,10 @@
 # ==============================================================================
 
 # Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+import os
 import sys
 
-sys.path.append("/workspaces/voicemos-challange-2022/src/fairseq")
+sys.path.append(os.environ["D2V2_PYTHONPATH"])
 from examples.data2vec.models.data2vec2 import Data2VecMultiModel
 
 import os
@@ -134,14 +135,7 @@ def main():
     trainlist = os.path.join(datadir, "sets/train_mos_list.txt")
     validlist = os.path.join(datadir, "sets/val_mos_list.txt")
 
-    ssl_model_type = cp_path.split("/")[-1]
-    if ssl_model_type in ["wav2vec_small.pt", "data2vec2_base_libri.pt"]:
-        SSL_OUT_DIM = 768
-    elif ssl_model_type in ["w2v_large_lv_fsh_swbd_cv.pt", "xlsr_53_56k.pt"]:
-        SSL_OUT_DIM = 1024
-    else:
-        print("*** ERROR *** SSL model type " + ssl_model_type + " not supported.")
-        exit()
+    SSL_OUT_DIM = os.environ["SSL_OUT_DIM"]
 
     model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
     ssl_model = model[0]
