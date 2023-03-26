@@ -24,6 +24,9 @@ import numpy as np
 import random
 
 
+SSL_OUT_DIM = os.environ["SSL_OUT_DIM"]
+
+
 class MosPredictor(nn.Module):
     def __init__(self, ssl_model, ssl_out_dim):
         super(MosPredictor, self).__init__()
@@ -134,8 +137,6 @@ def main():
     wavdir = os.path.join(datadir, "wav")
     trainlist = os.path.join(datadir, "sets/train_mos_list.txt")
     validlist = os.path.join(datadir, "sets/val_mos_list.txt")
-
-    SSL_OUT_DIM = os.environ["SSL_OUT_DIM"]
 
     model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
     ssl_model = model[0]
