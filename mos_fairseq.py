@@ -4,14 +4,8 @@
 # All rights reserved.
 # ==============================================================================
 
-# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
 import os
 import sys
-
-sys.path.append(os.environ["D2V2_PYTHONPATH"])
-from examples.data2vec.models.data2vec2 import Data2VecMultiModel
-
-import os
 import argparse
 import fairseq
 import torch
@@ -22,6 +16,11 @@ from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
 import numpy as np
 import random
+
+
+# Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
+sys.path.append(os.environ["D2V2_PYTHONPATH"])
+from examples.data2vec.models.data2vec2 import Data2VecMultiModel  # noqa: E402, F401
 
 
 SSL_OUT_DIM = os.environ["SSL_OUT_DIM"]
