@@ -19,11 +19,12 @@ import random
 
 
 # Data2VecMultiModelを参照できるように、@register_modelされたclassをimportする必要あり
-sys.path.append(os.environ["D2V2_PYTHONPATH"])
-from examples.data2vec.models.data2vec2 import Data2VecMultiModel  # noqa: E402, F401
+sys.path.append(os.environ["D2V2_SPECTROGRAM_PYTHONPATH"])
+import examples.data2vec.models.data2vec2  # noqa: E402, F401
+import examples.data2vec.tasks.spectrogram_pretraining  # noqa: E402, F401
 
 
-SSL_OUT_DIM = os.environ["SSL_OUT_DIM"]
+SSL_OUT_DIM = int(os.environ["SSL_OUT_DIM"])
 
 
 class MosPredictor(nn.Module):
