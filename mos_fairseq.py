@@ -239,6 +239,8 @@ def main():
             PREV_VAL_LOSS = avg_val_loss
             PATH = os.path.join(ckptdir, "ckpt_" + str(epoch))
             torch.save(net.state_dict(), PATH)
+            PATH = os.path.join(ckptdir, "ckpt_last")
+            torch.save(net.state_dict(), PATH)
             patience = orig_patience
         else:
             patience -= 1
