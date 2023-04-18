@@ -46,6 +46,10 @@ except (KeyError, ModuleNotFoundError) as e:
 
 SSL_OUT_DIM = int(os.environ["SSL_OUT_DIM"])
 INPUT_TYPE = os.getenv("INPUT_TYPE", "wav")
+WIN_LENGTH = int(os.getenv("WIN_LENGTH", 400))
+HOP_LENGTH = int(os.getenv("HOP_LENGTH", 160))
+N_FFT = int(os.getenv("N_FFT", 512))
+OUTPUT_CHANNEL_DIM = int(os.getenv("OUTPUT_CHANNEL_DIM", 128))
 
 
 class MosPredictor(nn.Module):
@@ -96,7 +100,14 @@ class MyDataset(Dataset):
             amount_to_pad = max_len - wav.shape[1]
             padded_wav = torch.nn.functional.pad(wav, (0, amount_to_pad), "constant", 0)
             if INPUT_TYPE != "wav":
-                padded_wav = transform_to_spectrogram(padded_wav, INPUT_TYPE)
+                padded_wav = transform_to_spectrogram(
+                    padded_wav,
+                    INPUT_TYPE,
+                    win_length=WIN_LENGTH,
+                    hop_length=HOP_LENGTH,
+                    n_fft=N_FFT,
+                    output_channel_dim=OUTPUT_CHANNEL_DIM,
+                )
             output_wavs.append(padded_wav)
 
         output_wavs = torch.stack(output_wavs, dim=0)
