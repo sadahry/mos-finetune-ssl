@@ -198,6 +198,8 @@ def main():
     print("[SYSTEM] Kendall Tau rank correlation coefficient= %f" % KTAU[0])
 
     ## generate answer.txt for codalab
+    if not os.path.dirname(outfile) == "":
+        os.makedirs(os.path.dirname(outfile), exist_ok=True)
     ans = open(outfile, "w")
     for k, v in predictions.items():
         outl = k.split(".")[0] + "," + str(v) + "\n"
