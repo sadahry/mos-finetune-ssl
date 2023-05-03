@@ -142,7 +142,7 @@ def main():
     )
     parser.add_argument(
         "--lr",
-        type=int,
+        type=float,
         required=False,
         default=0.0001,
         help="Learning rate",
