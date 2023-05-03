@@ -140,6 +140,13 @@ def main():
         default="checkpoints",
         help="Output directory for your trained checkpoints",
     )
+    parser.add_argument(
+        "--lr",
+        type=int,
+        required=False,
+        default=0.0001,
+        help="Learning rate",
+    )
     parser.add_argument("--seed", type=int, required=False, default=0, help="seed")
     args = parser.parse_args()
 
@@ -161,6 +168,7 @@ def main():
     datadir = args.datadir
     ckptdir = args.outdir
     my_checkpoint = args.finetune_from_checkpoint
+    lr = args.lr
 
     if not os.path.exists(ckptdir):
         os.system("mkdir -p " + ckptdir)
@@ -205,7 +213,7 @@ def main():
         net.load_state_dict(torch.load(my_checkpoint))
 
     criterion = nn.L1Loss()
-    optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9)
 
     PREV_VAL_LOSS = 9999999999
     orig_patience = 20
@@ -248,12 +256,17 @@ def main():
         if avg_val_loss < PREV_VAL_LOSS:
             print("Loss has decreased")
             PREV_VAL_LOSS = avg_val_loss
-            PATH = os.path.join(ckptdir, "ckpt_" + str(epoch))
+            PATH = os.path.join(ckptdir, "ckpt_" + str(epoch) + "_lr" + str(lr))
             torch.save(net.state_dict(), PATH)
-            PATH = os.path.join(ckptdir, "ckpt_best")
+            PATH = os.path.join(ckptdir, "ckpt_best" + "_lr" + str(lr))
             torch.save(net.state_dict(), PATH)
             patience = orig_patience
         else:
+            # if epoch == 5:
+            #     print("Finish training in first 5 epochs; exiting")
+            #     PATH = os.path.join(ckptdir, "ckpt_stopped_" + str(epoch))
+            #     torch.save(net.state_dict(), PATH)
+            #     break
             patience -= 1
             if patience == 0:
                 print(
