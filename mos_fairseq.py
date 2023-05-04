@@ -147,28 +147,43 @@ def main():
         default=0.0001,
         help="Learning rate",
     )
-    parser.add_argument("--seed", type=int, required=False, default=0, help="seed")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        required=False,
+        default=None,
+        help="seed set minus value if no seed",
+    )
     args = parser.parse_args()
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
-
-    def seed_worker(worker_id):
-        worker_seed = torch.initial_seed() % 2**32
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-
-    g = torch.Generator()
-    g.manual_seed(args.seed)
-
+    seed = args.seed
+    if seed < 0:
+        seed = None
     cp_path = args.fairseq_base_model
     datadir = args.datadir
     ckptdir = args.outdir
     my_checkpoint = args.finetune_from_checkpoint
     lr = args.lr
+
+    g = torch.Generator()
+
+    if seed is not None:
+        g.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+
+        def seed_worker(worker_id):
+            worker_seed = torch.initial_seed() % 2**32
+            np.random.seed(worker_seed)
+            random.seed(worker_seed)
+
+    else:
+
+        def seed_worker(worker_id):
+            return
 
     if not os.path.exists(ckptdir):
         os.system("mkdir -p " + ckptdir)
@@ -256,9 +271,13 @@ def main():
         if avg_val_loss < PREV_VAL_LOSS:
             print("Loss has decreased")
             PREV_VAL_LOSS = avg_val_loss
-            PATH = os.path.join(ckptdir, "ckpt_" + str(epoch) + "_lr" + str(lr))
+            PATH = os.path.join(
+                ckptdir, "ckpt_" + str(epoch) + "_lr" + str(lr) + "_seed" + str(seed)
+            )
             torch.save(net.state_dict(), PATH)
-            PATH = os.path.join(ckptdir, "ckpt_best" + "_lr" + str(lr))
+            PATH = os.path.join(
+                ckptdir, "ckpt_best" + "_lr" + str(lr) + "_seed" + str(seed)
+            )
             torch.save(net.state_dict(), PATH)
             patience = orig_patience
         else:
