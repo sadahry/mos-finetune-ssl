@@ -22,6 +22,9 @@ try:
     sys.path.append(os.environ["D2V2_SPECTROGRAM_PYTHONPATH"])
     import examples.data2vec.models.data2vec2  # noqa: E402, F401
     import examples.data2vec.tasks.spectrogram_pretraining  # noqa: E402, F401
+    from examples.data2vec.models.modalities.spectrogram import (
+        SpectrogramPatchEmbed,
+    )  # noqa: E402, F401
 except (KeyError, ModuleNotFoundError) as e:
     print(e)
     print("Module data2vec2 is not used")
@@ -53,16 +56,33 @@ OUTPUT_CHANNEL_DIM = int(os.getenv("OUTPUT_CHANNEL_DIM", 128))
 
 
 class MosPredictor(nn.Module):
-    def __init__(self, ssl_model, ssl_out_dim):
+    def __init__(self, ssl_model=None):
         super(MosPredictor, self).__init__()
-        self.ssl_model = ssl_model
-        self.ssl_features = ssl_out_dim
+        self.ssl_features = SSL_OUT_DIM
+        if ssl_model is not None:
+            self.model = ssl_model
+        else:
+            assert INPUT_TYPE != "wav", "wav is not supported"
+            patch_embed_dim = 512
+            self.model = nn.Sequential(
+                SpectrogramPatchEmbed(
+                    patch_size=int(320 / HOP_LENGTH),
+                    patch_channel_dim=OUTPUT_CHANNEL_DIM,
+                    patch_embed_dim=patch_embed_dim,
+                ),
+                fairseq.modules.TransposeLast(),
+                nn.LayerNorm(patch_embed_dim),
+                nn.Linear(patch_embed_dim, self.ssl_features),
+            )
         self.output_layer = nn.Linear(self.ssl_features, 1)
 
     def forward(self, wav):
         wav = wav.squeeze(1)  ## [batches, audio_len]
-        res = self.ssl_model(wav, mask=False, features_only=True)
-        x = res["x"]
+        if isinstance(self.model[0], SpectrogramPatchEmbed):
+            x = self.model(wav)
+        else:
+            res = self.model(wav, mask=False, features_only=True)
+            x = res["x"]
         x = torch.mean(x, 1)
         x = self.output_layer(x)
         return x.squeeze(1)
@@ -125,7 +145,7 @@ def main():
         "--fairseq_base_model",
         type=str,
         required=True,
-        help="Path to pretrained fairseq base model",
+        help="Path to pretrained fairseq base model. Set `none` is no base model",
     )
     parser.add_argument(
         "--finetune_from_checkpoint",
@@ -159,7 +179,9 @@ def main():
     seed = args.seed
     if seed < 0:
         seed = None
-    cp_path = args.fairseq_base_model
+    fairseq_base_model = args.fairseq_base_model
+    if fairseq_base_model.lower() == "none":
+        fairseq_base_model = None
     datadir = args.datadir
     ckptdir = args.outdir
     my_checkpoint = args.finetune_from_checkpoint
@@ -195,9 +217,13 @@ def main():
     trainlist = os.path.join(datadir, "sets/train_mos_list.txt")
     validlist = os.path.join(datadir, "sets/val_mos_list.txt")
 
-    model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
-    ssl_model = model[0]
-    ssl_model.remove_pretraining_modules()
+    ssl_model = None
+    if fairseq_base_model is not None:
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
+            [fairseq_base_model]
+        )
+        ssl_model = model[0]
+        ssl_model.remove_pretraining_modules()
 
     trainset = MyDataset(wavdir, trainlist)
     trainloader = DataLoader(
@@ -221,7 +247,7 @@ def main():
         generator=g,
     )
 
-    net = MosPredictor(ssl_model, SSL_OUT_DIM)
+    net = MosPredictor(ssl_model)
     net = net.to(device)
 
     if my_checkpoint != None:  ## do (further) finetuning

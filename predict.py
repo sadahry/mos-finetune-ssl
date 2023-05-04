@@ -76,21 +76,27 @@ def main():
     )
     args = parser.parse_args()
 
-    cp_path = args.fairseq_base_model
+    fairseq_base_model = args.fairseq_base_model
+    if fairseq_base_model.lower() == "none":
+        fairseq_base_model = None
     my_checkpoint = args.finetuned_checkpoint
     datadir = args.datadir
     outfile = args.outfile
 
     system_csv_path = os.path.join(datadir, "mydata_system.csv")
 
-    model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
-    ssl_model = model[0]
-    ssl_model.remove_pretraining_modules()
+    ssl_model = None
+    if fairseq_base_model is not None:
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
+            [fairseq_base_model]
+        )
+        ssl_model = model[0]
+        ssl_model.remove_pretraining_modules()
 
     print("Loading checkpoint")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = MosPredictor(ssl_model, SSL_OUT_DIM).to(device)
+    model = MosPredictor(ssl_model).to(device)
     model.eval()
 
     model.load_state_dict(torch.load(my_checkpoint))
