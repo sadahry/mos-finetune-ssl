@@ -173,7 +173,7 @@ def main():
         "--seed",
         type=int,
         required=False,
-        default=None,
+        default=0,
         help="seed set minus value if no seed",
     )
     args = parser.parse_args()
