@@ -60,8 +60,7 @@ class MosPredictor(nn.Module):
         super(MosPredictor, self).__init__()
         self.ssl_features = SSL_OUT_DIM
         if ssl_model is not None:
-            self.model = ssl_model
-            self.is_ssl_model = True
+            self.ssl_model = ssl_model
         else:
             assert INPUT_TYPE != "wav", "wav is not supported"
             patch_embed_dim = 512
@@ -75,13 +74,12 @@ class MosPredictor(nn.Module):
                 nn.LayerNorm(patch_embed_dim),
                 nn.Linear(patch_embed_dim, self.ssl_features),
             )
-            self.is_ssl_model = False
         self.output_layer = nn.Linear(self.ssl_features, 1)
 
     def forward(self, wav):
         wav = wav.squeeze(1)  ## [batches, audio_len]
-        if self.is_ssl_model:
-            res = self.model(wav, mask=False, features_only=True)
+        if self.ssl_model is not None:
+            res = self.ssl_model(wav, mask=False, features_only=True)
             x = res["x"]
         else:
             x = self.model(wav)
